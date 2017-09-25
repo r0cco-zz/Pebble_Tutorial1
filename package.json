@@ -4,9 +4,15 @@
     "keywords": [],
     "name": "tutorial-1",
     "pebble": {
+        "capabilities": [
+            "location"
+        ],
         "displayName": "Tutorial 1",
         "enableMultiJS": true,
-        "messageKeys": [],
+        "messageKeys": [
+            "TEMPERATURE",
+            "CONDITIONS"
+        ],
         "projectType": "native",
         "resources": {
             "media": [
@@ -15,6 +21,12 @@
                     "name": "IMAGE_BACKGROUND",
                     "targetPlatforms": null,
                     "type": "bitmap"
+                },
+                {
+                    "file": "fonts/perfect-dos-vga.ttf",
+                    "name": "FONT_PERFECT_DOS_20",
+                    "targetPlatforms": null,
+                    "type": "font"
                 },
                 {
                     "file": "fonts/perfect-dos-vga.ttf",
