@@ -15,6 +15,9 @@ static GFont s_weather_font;
 static int s_battery_level;
 static Layer *s_battery_layer;
 
+static BitmapLayer *s_background_layer, *s_bt_icon_layer;
+static GBitmap *s_background_bitmap, *s_bt_icon_bitmap;
+
 static void update_time() {
   // Get a tm structure
   time_t temp = time(NULL);
@@ -67,6 +70,16 @@ static void battery_update_proc(Layer *layer, GContext *ctx) {
   // Draw the bar
   graphics_context_set_fill_color(ctx, GColorWhite);
   graphics_fill_rect(ctx, GRect(0, 0, width, bounds.size.h), 0, GCornerNone);
+}
+
+static void bluetooth_callback(bool connected) {
+  // Show icon if disconnected
+  layer_set_hidden(bitmap_layer_get_layer(s_bt_icon_layer), connected);
+
+  if(!connected) {
+    // Issue a vibrating alert
+    vibes_double_pulse();
+  }
 }
 
 static void main_window_load(Window *window) {
@@ -122,9 +135,20 @@ static void main_window_load(Window *window) {
   // Create battery meter Layer
   s_battery_layer = layer_create(GRect(14, 54, 115, 2));
   layer_set_update_proc(s_battery_layer, battery_update_proc);
-
+  
   // Add to Window
   layer_add_child(window_get_root_layer(window), s_battery_layer);
+  
+  // Create the Bluetooth icon GBitmap
+  s_bt_icon_bitmap = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_BT_ICON);
+
+  // Create the BitmapLayer to display the GBitmap
+  s_bt_icon_layer = bitmap_layer_create(GRect(59, 12, 30, 30));
+  bitmap_layer_set_bitmap(s_bt_icon_layer, s_bt_icon_bitmap);
+  layer_add_child(window_get_root_layer(window), bitmap_layer_get_layer(s_bt_icon_layer));
+  
+  // Show the correct state of the BT connection from the start
+  bluetooth_callback(connection_service_peek_pebble_app_connection());
 }
 
 static void main_window_unload(Window *window) {
@@ -146,6 +170,10 @@ static void main_window_unload(Window *window) {
   
   // Destroy battery meter
   layer_destroy(s_battery_layer);
+  
+  // Destroy bluetooth icon
+  gbitmap_destroy(s_bt_icon_bitmap);
+  bitmap_layer_destroy(s_bt_icon_layer);
 }
 
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
@@ -217,6 +245,11 @@ static void init() {
   
   // Ensure battery level is displayed from the start
   battery_callback(battery_state_service_peek());
+  
+  // Register for Bluetooth connection updates
+  connection_service_subscribe((ConnectionHandlers) {
+    .pebble_app_connection_handler = bluetooth_callback
+  });
 }
 
 static void deinit() {
